@@ -194,9 +194,7 @@ if st.session_state.datasets:
                         st.error(f"Processing {dataset_name} failed: {str(e)}")
 
 # Visualization
-if (st.session_state.current_dataset and 
-    (st.session_state.current_dataset in st.session_state.reconstructed or
-     st.session_state.current_config in st.session_state.configurations)):
+if st.session_state.current_dataset:
     st.subheader("Results")
     
     col1, col2 = st.columns(2)
@@ -209,9 +207,12 @@ if (st.session_state.current_dataset and
         
     with col2:
         st.markdown("### Reconstruction")
-        reconstructed = st.session_state.reconstructed[st.session_state.current_dataset]
-        recon_idx = create_slice_navigator(reconstructed, "recon")
-        display_slice(reconstructed, recon_idx, "")
+        if st.session_state.current_dataset in st.session_state.reconstructed:
+            reconstructed = st.session_state.reconstructed[st.session_state.current_dataset]
+            recon_idx = create_slice_navigator(reconstructed, "recon")
+            display_slice(reconstructed, recon_idx, "")
+        else:
+            st.info("Please process the dataset to view reconstruction.")
     
     # Export results
     st.subheader("Export Results")
