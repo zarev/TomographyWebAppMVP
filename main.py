@@ -104,12 +104,11 @@ with col2:
         selected_config = st.selectbox(
             "Select Configuration",
             ['Default'] + list(st.session_state.configurations.keys()),
-            key="selected_config",
-            on_change=lambda: st.rerun()  # Add immediate rerun on change
+            key="selected_config"
         )
         
-        # Move this outside the if condition to always apply when config is selected
-        if selected_config != 'Default':
+        # Check if configuration selection has changed
+        if selected_config != 'Default' and selected_config != st.session_state.get('last_selected_config'):
             config = st.session_state.configurations[selected_config]
             st.session_state.normalize = config['normalize']
             st.session_state.remove_rings = config['remove_rings']
@@ -117,6 +116,7 @@ with col2:
             st.session_state.sino_slider = config.get('sino_idx', 0)
             st.session_state.recon_slider = config.get('recon_idx', 0)
             st.session_state.current_config = selected_config
+            st.session_state.last_selected_config = selected_config
 
 st.markdown("---")
 
