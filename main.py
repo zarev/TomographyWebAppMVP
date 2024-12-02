@@ -18,6 +18,10 @@ if 'reconstructed' not in st.session_state:
     st.session_state.reconstructed = {}
 if 'current_dataset' not in st.session_state:
     st.session_state.current_dataset = None
+if 'configurations' not in st.session_state:
+    st.session_state.configurations = {}
+if 'current_config' not in st.session_state:
+    st.session_state.current_config = None
 
 # Title and description
 st.title("Tomographic Reconstruction")
@@ -77,16 +81,55 @@ if st.session_state.datasets:
 if st.session_state.datasets:
     st.subheader("Processing Parameters")
     
+    # Configuration management
     col1, col2 = st.columns(2)
     with col1:
-        normalize = st.checkbox("Apply Normalization", value=True)
-        remove_rings = st.checkbox("Remove Ring Artifacts", value=True)
+        # Save current configuration
+        config_name = st.text_input("Configuration Name", key="config_name")
+        if st.button("Save Configuration"):
+            if config_name:
+                st.session_state.configurations[config_name] = {
+                    'normalize': st.session_state.get('normalize', True),
+                    'remove_rings': st.session_state.get('remove_rings', True),
+                    'ring_level': st.session_state.get('ring_level', 1.0)
+                }
+                st.success(f"Configuration '{config_name}' saved!")
+    
+    with col2:
+        # Load configuration
+        if st.session_state.configurations:
+            selected_config = st.selectbox(
+                "Select Configuration",
+                ['Default'] + list(st.session_state.configurations.keys()),
+                key="selected_config"
+            )
+            
+            if selected_config != 'Default' and selected_config in st.session_state.configurations:
+                config = st.session_state.configurations[selected_config]
+                st.session_state.normalize = config['normalize']
+                st.session_state.remove_rings = config['remove_rings']
+                st.session_state.ring_level = config['ring_level']
+                st.session_state.current_config = selected_config
+    
+    st.markdown("---")
+    
+    # Processing parameters
+    col1, col2 = st.columns(2)
+    with col1:
+        normalize = st.checkbox("Apply Normalization", 
+                              value=st.session_state.get('normalize', True),
+                              key='normalize')
+        remove_rings = st.checkbox("Remove Ring Artifacts", 
+                                 value=st.session_state.get('remove_rings', True),
+                                 key='remove_rings')
     
     with col2:
         ring_level = st.slider(
             "Ring Removal Strength",
-            0.1, 5.0, 1.0,
-            disabled=not remove_rings
+            0.1, 5.0, 
+            value=st.session_state.get('ring_level', 1.0),
+            disabled=not remove_rings,
+            key='ring_level'
         )
     
     # Process buttons
