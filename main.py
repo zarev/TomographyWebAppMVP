@@ -104,10 +104,12 @@ with col2:
         selected_config = st.selectbox(
             "Select Configuration",
             ['Default'] + list(st.session_state.configurations.keys()),
-            key="selected_config"
+            key="selected_config",
+            on_change=lambda: st.experimental_rerun()  # Add immediate rerun on change
         )
         
-        if selected_config != 'Default' and selected_config in st.session_state.configurations:
+        # Move this outside the if condition to always apply when config is selected
+        if selected_config != 'Default':
             config = st.session_state.configurations[selected_config]
             st.session_state.normalize = config['normalize']
             st.session_state.remove_rings = config['remove_rings']
@@ -115,11 +117,6 @@ with col2:
             st.session_state.sino_slider = config.get('sino_idx', 0)
             st.session_state.recon_slider = config.get('recon_idx', 0)
             st.session_state.current_config = selected_config
-            
-            # Force visualization update if dataset is processed
-            if (st.session_state.current_dataset and 
-                st.session_state.current_dataset in st.session_state.reconstructed):
-                st.experimental_rerun()
 
 st.markdown("---")
 
