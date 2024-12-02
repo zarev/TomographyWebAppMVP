@@ -123,7 +123,7 @@ with col2:
                 for key, value in config.items():
                     st.session_state[key] = value
                 st.session_state.current_config = selected_config
-                st.experimental_rerun()  # Force refresh
+                st.rerun()  # Force refresh
 
 st.markdown("---")
 

@@ -12,5 +12,16 @@
         "ring_level": 1.0,
         "sino_idx": 0,
         "recon_idx": 0
+    },
+    "dd": {
+        "normalize": true,
+        "remove_rings": true,
+        "ring_level": 1.97,
+        "current_dataset": "sample_tiff_dataset.tiff",
+        "sino_slider": 3,
+        "recon_slider": 127,
+        "processed_datasets": [
+            "sample_tiff_dataset.tiff"
+        ]
     }
 }
