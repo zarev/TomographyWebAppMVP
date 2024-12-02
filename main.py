@@ -91,11 +91,18 @@ with col1:
     if st.button("Save Configuration"):
         if config_name:
             st.session_state.configurations[config_name] = {
+                # Processing parameters
                 'normalize': st.session_state.get('normalize', True),
                 'remove_rings': st.session_state.get('remove_rings', True),
                 'ring_level': st.session_state.get('ring_level', 1.0),
-                'sino_idx': st.session_state.get('sino_slider', 0),
-                'recon_idx': st.session_state.get('recon_slider', 0)
+                
+                # Workflow state
+                'current_dataset': st.session_state.current_dataset,
+                'sino_slider': st.session_state.get('sino_slider', 0),
+                'recon_slider': st.session_state.get('recon_slider', 0),
+                
+                # Add any other relevant state variables
+                'processed_datasets': list(st.session_state.reconstructed.keys())
             }
             save_configurations(st.session_state.configurations)
             st.success(f"Configuration '{config_name}' saved!")
@@ -112,13 +119,11 @@ with col2:
         if st.button("Load Configuration"):
             if selected_config != 'Default':
                 config = st.session_state.configurations[selected_config]
-                st.session_state.normalize = config['normalize']
-                st.session_state.remove_rings = config['remove_rings']
-                st.session_state.ring_level = config['ring_level']
-                st.session_state.sino_slider = config.get('sino_idx', 0)
-                st.session_state.recon_slider = config.get('recon_idx', 0)
+                # Update all session state variables
+                for key, value in config.items():
+                    st.session_state[key] = value
                 st.session_state.current_config = selected_config
-                st.rerun()
+                st.experimental_rerun()  # Force refresh
 
 st.markdown("---")
 
