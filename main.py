@@ -80,46 +80,47 @@ if st.session_state.datasets:
         with col3:
             st.metric("Width", dataset['metadata']['shape'][2])
 
-# Processing parameters
+# Configuration Management
+st.subheader("Configuration Management")
+col1, col2 = st.columns(2)
+with col1:
+    # Save current configuration
+    config_name = st.text_input("Configuration Name", key="config_name")
+    if st.button("Save Configuration"):
+        if config_name:
+            st.session_state.configurations[config_name] = {
+                'normalize': st.session_state.get('normalize', True),
+                'remove_rings': st.session_state.get('remove_rings', True),
+                'ring_level': st.session_state.get('ring_level', 1.0),
+                'sino_idx': st.session_state.get('sino_slider', 0),
+                'recon_idx': st.session_state.get('recon_slider', 0)
+            }
+            save_configurations(st.session_state.configurations)
+            st.success(f"Configuration '{config_name}' saved!")
+
+with col2:
+    # Load configuration
+    if st.session_state.configurations:
+        selected_config = st.selectbox(
+            "Select Configuration",
+            ['Default'] + list(st.session_state.configurations.keys()),
+            key="selected_config"
+        )
+        
+        if selected_config != 'Default' and selected_config in st.session_state.configurations:
+            config = st.session_state.configurations[selected_config]
+            st.session_state.normalize = config['normalize']
+            st.session_state.remove_rings = config['remove_rings']
+            st.session_state.ring_level = config['ring_level']
+            st.session_state.sino_slider = config.get('sino_idx', 0)
+            st.session_state.recon_slider = config.get('recon_idx', 0)
+            st.session_state.current_config = selected_config
+
+st.markdown("---")
+
+# Processing parameters (only shown when datasets are available)
 if st.session_state.datasets:
     st.subheader("Processing Parameters")
-    
-    # Configuration management
-    col1, col2 = st.columns(2)
-    with col1:
-        # Save current configuration
-        config_name = st.text_input("Configuration Name", key="config_name")
-        if st.button("Save Configuration"):
-            if config_name:
-                st.session_state.configurations[config_name] = {
-                    'normalize': st.session_state.get('normalize', True),
-                    'remove_rings': st.session_state.get('remove_rings', True),
-                    'ring_level': st.session_state.get('ring_level', 1.0),
-                    'sino_idx': st.session_state.get('sino_slider', 0),
-                    'recon_idx': st.session_state.get('recon_slider', 0)
-                }
-                save_configurations(st.session_state.configurations)
-                st.success(f"Configuration '{config_name}' saved!")
-    
-    with col2:
-        # Load configuration
-        if st.session_state.configurations:
-            selected_config = st.selectbox(
-                "Select Configuration",
-                ['Default'] + list(st.session_state.configurations.keys()),
-                key="selected_config"
-            )
-            
-            if selected_config != 'Default' and selected_config in st.session_state.configurations:
-                config = st.session_state.configurations[selected_config]
-                st.session_state.normalize = config['normalize']
-                st.session_state.remove_rings = config['remove_rings']
-                st.session_state.ring_level = config['ring_level']
-                st.session_state.sino_slider = config.get('sino_idx', 0)
-                st.session_state.recon_slider = config.get('recon_idx', 0)
-                st.session_state.current_config = selected_config
-    
-    st.markdown("---")
     
     # Processing parameters
     col1, col2 = st.columns(2)

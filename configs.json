@@ -1,0 +1,16 @@
+{
+    "persist": {
+        "normalize": true,
+        "remove_rings": true,
+        "ring_level": 1.83,
+        "sino_idx": 4,
+        "recon_idx": 127
+    },
+    "pers": {
+        "normalize": true,
+        "remove_rings": true,
+        "ring_level": 1.0,
+        "sino_idx": 0,
+        "recon_idx": 0
+    }
+}
