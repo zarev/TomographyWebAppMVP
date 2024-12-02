@@ -201,9 +201,12 @@ if st.session_state.current_dataset:
     
     with col1:
         st.markdown("### Sinogram")
-        data = st.session_state.datasets[st.session_state.current_dataset]['data']
-        sino_idx = create_slice_navigator(data, "sino")
-        display_slice(data, sino_idx, "")
+        if st.session_state.current_dataset in st.session_state.datasets:
+            data = st.session_state.datasets[st.session_state.current_dataset]['data']
+            sino_idx = create_slice_navigator(data, "sino")
+            display_slice(data, sino_idx, "")
+        else:
+            st.warning(f"Dataset '{st.session_state.current_dataset}' is not currently loaded. Please upload the dataset.")
         
     with col2:
         st.markdown("### Reconstruction")
