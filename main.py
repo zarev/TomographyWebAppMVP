@@ -105,7 +105,7 @@ with col2:
             "Select Configuration",
             ['Default'] + list(st.session_state.configurations.keys()),
             key="selected_config",
-            on_change=lambda: st.experimental_rerun()  # Add immediate rerun on change
+            on_change=lambda: st.rerun()  # Add immediate rerun on change
         )
         
         # Move this outside the if condition to always apply when config is selected
