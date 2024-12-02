@@ -115,6 +115,11 @@ with col2:
             st.session_state.sino_slider = config.get('sino_idx', 0)
             st.session_state.recon_slider = config.get('recon_idx', 0)
             st.session_state.current_config = selected_config
+            
+            # Force visualization update if dataset is processed
+            if (st.session_state.current_dataset and 
+                st.session_state.current_dataset in st.session_state.reconstructed):
+                st.experimental_rerun()
 
 st.markdown("---")
 
@@ -185,7 +190,9 @@ if st.session_state.datasets:
                         st.error(f"Processing {dataset_name} failed: {str(e)}")
 
 # Visualization
-if st.session_state.current_dataset and st.session_state.current_dataset in st.session_state.reconstructed:
+if (st.session_state.current_dataset and 
+    (st.session_state.current_dataset in st.session_state.reconstructed or
+     st.session_state.current_config in st.session_state.configurations)):
     st.subheader("Results")
     
     col1, col2 = st.columns(2)
