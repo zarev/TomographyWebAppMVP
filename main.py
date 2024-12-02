@@ -25,6 +25,8 @@ if 'configurations' not in st.session_state:
     st.session_state.configurations = load_configurations()
 if 'current_config' not in st.session_state:
     st.session_state.current_config = None
+if 'config_changed' not in st.session_state:
+    st.session_state.config_changed = False
 
 # Title and description
 st.title("Tomographic Reconstruction")
@@ -101,22 +103,28 @@ with col1:
 with col2:
     # Load configuration
     if st.session_state.configurations:
+        def on_config_change():
+            st.session_state.config_changed = True
+
         selected_config = st.selectbox(
             "Select Configuration",
             ['Default'] + list(st.session_state.configurations.keys()),
-            key="selected_config"
+            key=f"selected_config_{st.session_state.get('config_changed', False)}",
+            on_change=on_config_change
         )
         
-        # Check if configuration selection has changed
-        if selected_config != 'Default' and selected_config != st.session_state.get('last_selected_config'):
-            config = st.session_state.configurations[selected_config]
-            st.session_state.normalize = config['normalize']
-            st.session_state.remove_rings = config['remove_rings']
-            st.session_state.ring_level = config['ring_level']
-            st.session_state.sino_slider = config.get('sino_idx', 0)
-            st.session_state.recon_slider = config.get('recon_idx', 0)
-            st.session_state.current_config = selected_config
-            st.session_state.last_selected_config = selected_config
+        # Apply configuration when changed
+        if st.session_state.config_changed:
+            if selected_config != 'Default':
+                config = st.session_state.configurations[selected_config]
+                st.session_state.normalize = config['normalize']
+                st.session_state.remove_rings = config['remove_rings']
+                st.session_state.ring_level = config['ring_level']
+                st.session_state.sino_slider = config.get('sino_idx', 0)
+                st.session_state.recon_slider = config.get('recon_idx', 0)
+                st.session_state.current_config = selected_config
+            st.session_state.config_changed = False
+            st.rerun()
 
 st.markdown("---")
 
