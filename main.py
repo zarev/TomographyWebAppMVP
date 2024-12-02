@@ -1,6 +1,9 @@
 import streamlit as st
 import numpy as np
-from utils import read_hdf5, read_tiff_stack, save_tiff, validate_file
+from utils import (
+    read_hdf5, read_tiff_stack, save_tiff, validate_file,
+    load_configurations, save_configurations
+)
 from processing import process_pipeline
 from visualization import display_slice, create_slice_navigator
 
@@ -19,7 +22,7 @@ if 'reconstructed' not in st.session_state:
 if 'current_dataset' not in st.session_state:
     st.session_state.current_dataset = None
 if 'configurations' not in st.session_state:
-    st.session_state.configurations = {}
+    st.session_state.configurations = load_configurations()
 if 'current_config' not in st.session_state:
     st.session_state.current_config = None
 
@@ -91,8 +94,11 @@ if st.session_state.datasets:
                 st.session_state.configurations[config_name] = {
                     'normalize': st.session_state.get('normalize', True),
                     'remove_rings': st.session_state.get('remove_rings', True),
-                    'ring_level': st.session_state.get('ring_level', 1.0)
+                    'ring_level': st.session_state.get('ring_level', 1.0),
+                    'sino_idx': st.session_state.get('sino_slider', 0),
+                    'recon_idx': st.session_state.get('recon_slider', 0)
                 }
+                save_configurations(st.session_state.configurations)
                 st.success(f"Configuration '{config_name}' saved!")
     
     with col2:
@@ -109,6 +115,8 @@ if st.session_state.datasets:
                 st.session_state.normalize = config['normalize']
                 st.session_state.remove_rings = config['remove_rings']
                 st.session_state.ring_level = config['ring_level']
+                st.session_state.sino_slider = config.get('sino_idx', 0)
+                st.session_state.recon_slider = config.get('recon_idx', 0)
                 st.session_state.current_config = selected_config
     
     st.markdown("---")
@@ -146,6 +154,14 @@ if st.session_state.datasets:
                         ring_level=ring_level
                     )
                     st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
+                    # Update visualization indices in current configuration if exists
+                    if st.session_state.current_config:
+                        config_name = st.session_state.current_config
+                        st.session_state.configurations[config_name].update({
+                            'sino_idx': st.session_state.get('sino_slider', 0),
+                            'recon_idx': st.session_state.get('recon_slider', 0)
+                        })
+                        save_configurations(st.session_state.configurations)
                     st.success(f"Processing complete! Center of rotation: {center:.2f}")
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
