@@ -1,0 +1,112 @@
+The most basic version (MVP) of your tomographic reconstruction web app should focus on core functionality that delivers value quickly and is easy to build. Here’s a streamlined version of your vision:
+
+MVP Features
+
+Frontend (UI)
+
+	1.	Data Upload:
+	•	Drag-and-drop area for uploading datasets (HDF5, TIFF).
+	•	Display basic file metadata after upload (e.g., number of slices, resolution).
+	2.	Pipeline Builder:
+	•	Predefined tiles for essential steps:
+	•	Normalization
+	•	Ring Artifact Removal
+	•	Center of Rotation Estimation
+	•	Reconstruction
+	•	Simple linear flow (no drag-and-drop for this phase; steps execute sequentially).
+	3.	Visualization:
+	•	Basic image viewer for:
+	•	Sinogram slices
+	•	Reconstructed slices
+	•	Scrollable slider for navigating through slices.
+	4.	Result Export:
+	•	Option to download results (normalized sinograms, reconstructions) as TIFF files.
+
+Backend (Python)
+
+	1.	Framework:
+	•	Use FastAPI for the API backend.
+	2.	Core APIs:
+	•	/upload: Handles dataset uploads, validates file types, and saves files.
+	•	/process: Executes a sequential workflow with steps for:
+	•	Normalization
+	•	Ring removal
+	•	CoR estimation
+	•	Reconstruction
+	•	/results: Endpoint to retrieve processed results.
+	3.	Key Processing Steps:
+	•	Normalization: Compute normalized projections using flat and dark fields.
+	•	Ring Artifact Removal: Apply simple ring-removal filters (e.g., from sarepy or median filtering).
+	•	CoR Estimation: Use tomopy.find_center to estimate the center of rotation.
+	•	Reconstruction: Perform FBP using ASTRA or TomoPy.
+	4.	Result Handling:
+	•	Store intermediate and final results temporarily on the server.
+	•	Provide links for users to download results.
+
+Tech Stack
+
+	•	Frontend:
+	•	Framework: HTML/CSS with JavaScript or a lightweight library like Vue.js for dynamic elements.
+	•	Styling: TailwindCSS for quick and clean dark mode design.
+	•	Backend:
+	•	Framework: FastAPI for its simplicity and built-in async features.
+	•	Processing: Python libraries (TomoPy, ASTRA, NumPy).
+	•	Deployment:
+	•	Use Docker Compose for containerization.
+	•	Host on a lightweight server like AWS EC2 or DigitalOcean.
+
+User Workflow
+
+	1.	Upload Data:
+	•	Drag and drop your dataset.
+	•	File metadata is displayed (e.g., slice count, dimensions).
+	2.	Set Parameters:
+	•	Basic input fields for each step (e.g., ring removal strength, CoR search range).
+	3.	Run Workflow:
+	•	Click a “Run” button to process the data sequentially.
+	•	Display progress for each step.
+	4.	View Results:
+	•	Basic viewer for reconstructed slices.
+	•	Option to download results as TIFF files.
+
+Development Phases
+
+Phase 1: Backend
+
+	•	Implement core APIs (/upload, /process, /results).
+	•	Add processing logic for normalization, CoR estimation, and reconstruction.
+
+Phase 2: Frontend
+
+	•	Build a simple UI with:
+	•	Drag-and-drop upload.
+	•	Progress bar for workflow execution.
+	•	Basic image viewer for results.
+
+Phase 3: Deployment
+
+	•	Deploy on a cloud platform using Docker.
+	•	Ensure the app can handle medium-sized datasets.
+
+Basic UI Design
+
+Home Page:
+
+	•	Large upload area with a dark theme.
+	•	A “Run Workflow” button becomes active after upload.
+
+Processing Page:
+
+	•	Tiles for each step with parameters below:
+	•	Step 1: Normalization
+	•	Step 2: Ring Removal
+	•	Step 3: CoR Estimation
+	•	Step 4: Reconstruction
+	•	Progress bar or status indicator for each step.
+
+Result Viewer:
+
+	•	Single image viewer with navigation for slices.
+	•	Download button for results.
+
+Would you like me to mock up UI wireframes or provide sample Python code for one of the backend functionalities?
