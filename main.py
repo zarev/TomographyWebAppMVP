@@ -103,18 +103,13 @@ with col1:
 with col2:
     # Load configuration
     if st.session_state.configurations:
-        def on_config_change():
-            st.session_state.config_changed = True
-
         selected_config = st.selectbox(
             "Select Configuration",
             ['Default'] + list(st.session_state.configurations.keys()),
-            key=f"selected_config_{st.session_state.get('config_changed', False)}",
-            on_change=on_config_change
+            key="selected_config"
         )
         
-        # Apply configuration when changed
-        if st.session_state.config_changed:
+        if st.button("Load Configuration"):
             if selected_config != 'Default':
                 config = st.session_state.configurations[selected_config]
                 st.session_state.normalize = config['normalize']
@@ -123,8 +118,7 @@ with col2:
                 st.session_state.sino_slider = config.get('sino_idx', 0)
                 st.session_state.recon_slider = config.get('recon_idx', 0)
                 st.session_state.current_config = selected_config
-            st.session_state.config_changed = False
-            st.rerun()
+                st.rerun()
 
 st.markdown("---")
 
