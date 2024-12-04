@@ -28,7 +28,7 @@ def remove_ring_artifacts(data: np.ndarray, level: float = 1.0) -> np.ndarray:
         filtered[i] = np.median(data[max(0, i-int(level)):min(data.shape[0], i+int(level)+1)], axis=0).astype(np.float32)
     return filtered
 
-def find_center_of_rotation(data: np.ndarray) -> float:
+def find_center_of_rotation(data: np.ndarray) -> np.float32:
     """Estimate center of rotation using image symmetry."""
     # Simple center estimation using the middle of the image
     return np.float32(data.shape[2] / 2.0)
