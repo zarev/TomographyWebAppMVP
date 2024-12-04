@@ -79,12 +79,17 @@ if st.session_state.datasets:
         with col1:
             st.markdown("#### Sample Slice")
             data = dataset['data']
-            slice_idx = create_slice_navigator(data, "preview")
-            display_slice(data, slice_idx, "")
-        
-        with col2:
-            st.markdown("#### Intensity Distribution")
-            create_histogram(data[slice_idx])
+            
+            # Validate data before visualization
+            if data is not None and len(data.shape) >= 2:
+                slice_idx = create_slice_navigator(data, "preview")
+                display_slice(data, slice_idx, "")
+                
+                with col2:
+                    st.markdown("#### Intensity Distribution")
+                    create_histogram(data[slice_idx])
+            else:
+                st.error("Invalid data format for visualization")
 
 # Processing parameters
 if st.session_state.datasets:
