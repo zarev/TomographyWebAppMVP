@@ -32,23 +32,55 @@ uploaded_files = st.file_uploader(
 )
 
 # Process uploaded files
-for uploaded_file in uploaded_files:
-    if validate_file(uploaded_file):
-        # Read data
+tiff_files = []
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        if validate_file(uploaded_file):
+            try:
+                if uploaded_file.name.lower().endswith(('.h5', '.hdf5')):
+                    # Process HDF5 files individually
+                    data, metadata = read_hdf5(uploaded_file)
+                    st.session_state.datasets[uploaded_file.name] = {
+                        'data': data,
+                        'metadata': metadata
+                    }
+                else:
+                    # Group TIFF files for concatenation
+                    tiff_files.append(uploaded_file)
+            except Exception as e:
+                st.error(f"Error reading file {uploaded_file.name}: {str(e)}")
+    
+    # Process grouped TIFF files
+    if tiff_files:
         try:
-            if uploaded_file.name.lower().endswith(('.h5', '.hdf5')):
-                data, metadata = read_hdf5(uploaded_file)
-            else:
-                data, metadata = read_tiff_stack(uploaded_file)
+            # Read and concatenate TIFF files
+            combined_data = []
+            for tiff_file in tiff_files:
+                data, _ = read_tiff_stack(tiff_file)
+                combined_data.append(data)
             
-            # Store dataset in session state
-            st.session_state.datasets[uploaded_file.name] = {
-                'data': data,
-                'metadata': metadata
+            # Concatenate along the first axis (projection axis)
+            concatenated_data = np.concatenate(combined_data, axis=0)
+            
+            # Create combined metadata
+            combined_metadata = {
+                'shape': concatenated_data.shape,
+                'dtype': str(concatenated_data.dtype),
+                'n_projections': concatenated_data.shape[0],
+                'source_files': [f.name for f in tiff_files]
             }
-                
+            
+            # Store concatenated dataset
+            dataset_name = "combined_tiff_dataset.tiff"
+            st.session_state.datasets[dataset_name] = {
+                'data': concatenated_data,
+                'metadata': combined_metadata
+            }
+            
+            st.success(f"Successfully combined {len(tiff_files)} TIFF files into a single dataset")
+            
         except Exception as e:
-            st.error(f"Error reading file {uploaded_file.name}: {str(e)}")
+            st.error(f"Error combining TIFF files: {str(e)}")
 
 # Dataset selection
 if st.session_state.datasets:
