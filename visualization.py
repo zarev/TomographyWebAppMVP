@@ -18,7 +18,7 @@ def display_slice(data: np.ndarray, slice_idx: int, title: str):
     
     # Display with title
     st.subheader(title)
-    st.image(img, use_column_width=True)
+    st.image(img, use_container_width=True)
 
 def create_slice_navigator(data: np.ndarray, key_prefix: str) -> int:
     """Create a slider for navigating through slices."""
