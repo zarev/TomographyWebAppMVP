@@ -157,13 +157,13 @@ if st.session_state.datasets:
             with st.spinner(f"Processing {st.session_state.current_dataset}..."):
                 try:
                     data = st.session_state.datasets[st.session_state.current_dataset]['data']
-                    results = process_pipeline(
+                    reconstructed, center = process_pipeline(
                         data,
                         normalize=normalize,
                         remove_rings=remove_rings,
                         ring_level=ring_level
                     )
-                    st.session_state.reconstructed[st.session_state.current_dataset] = results
+                    st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
                     # Update visualization indices in current configuration if exists
                     if st.session_state.current_config:
                         config_name = st.session_state.current_config
@@ -172,7 +172,7 @@ if st.session_state.datasets:
                             'recon_idx': st.session_state.get('recon_slider', 0)
                         })
                         save_configurations(st.session_state.configurations)
-                    st.success(f"Processing complete! Center of rotation: {results['center']:.2f}")
+                    st.success(f"Processing complete! Center of rotation: {center:.2f}")
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
     
@@ -182,49 +182,40 @@ if st.session_state.datasets:
                 with st.spinner(f"Processing {dataset_name}..."):
                     try:
                         data = st.session_state.datasets[dataset_name]['data']
-                        results = process_pipeline(
+                        reconstructed, center = process_pipeline(
                             data,
                             normalize=normalize,
                             remove_rings=remove_rings,
                             ring_level=ring_level
                         )
-                        st.session_state.reconstructed[dataset_name] = results
-                        st.success(f"Processed {dataset_name}! Center of rotation: {results['center']:.2f}")
+                        st.session_state.reconstructed[dataset_name] = reconstructed
+                        st.success(f"Processed {dataset_name}! Center of rotation: {center:.2f}")
                     except Exception as e:
                         st.error(f"Processing {dataset_name} failed: {str(e)}")
 
 # Visualization
 if st.session_state.current_dataset:
-    st.subheader("Processing Steps")
+    st.subheader("Results")
     
-    # Original Data
-    st.markdown("### Original Sinogram")
-    if st.session_state.current_dataset in st.session_state.datasets:
-        data = st.session_state.datasets[st.session_state.current_dataset]['data']
-        sino_idx = create_slice_navigator(data, "sino")
-        display_slice(data, sino_idx, "")
-    else:
-        st.warning(f"Dataset '{st.session_state.current_dataset}' is not currently loaded. Please upload the dataset.")
+    col1, col2 = st.columns(2)
     
-    # Show intermediate results if available
-    if st.session_state.current_dataset in st.session_state.reconstructed:
-        results = st.session_state.reconstructed[st.session_state.current_dataset]
+    with col1:
+        st.markdown("### Sinogram")
+        if st.session_state.current_dataset in st.session_state.datasets:
+            data = st.session_state.datasets[st.session_state.current_dataset]['data']
+            sino_idx = create_slice_navigator(data, "sino")
+            display_slice(data, sino_idx, "")
+        else:
+            st.warning(f"Dataset '{st.session_state.current_dataset}' is not currently loaded. Please upload the dataset.")
         
-        # Normalized Data
-        if results['normalized'] is not None:
-            st.markdown("### After Normalization")
-            display_slice(results['normalized'], sino_idx, "")
-        
-        # Ring Removed Data
-        if results['ring_removed'] is not None:
-            st.markdown("### After Ring Removal")
-            display_slice(results['ring_removed'], sino_idx, "")
-        
-        # Final Reconstruction
-        if results['reconstructed'] is not None:
-            st.markdown("### Final Reconstruction")
-            recon_idx = create_slice_navigator(results['reconstructed'], "recon")
-            display_slice(results['reconstructed'], recon_idx, "")
+    with col2:
+        st.markdown("### Reconstruction")
+        if st.session_state.current_dataset in st.session_state.reconstructed:
+            reconstructed = st.session_state.reconstructed[st.session_state.current_dataset]
+            recon_idx = create_slice_navigator(reconstructed, "recon")
+            display_slice(reconstructed, recon_idx, "")
+        else:
+            st.info("Please process the dataset to view reconstruction.")
     
     # Export results
     st.subheader("Export Results")
