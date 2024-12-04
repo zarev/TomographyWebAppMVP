@@ -23,5 +23,16 @@
         "processed_datasets": [
             "sample_tiff_dataset.tiff"
         ]
+    },
+    "ttest": {
+        "normalize": true,
+        "remove_rings": true,
+        "ring_level": 1.0,
+        "current_dataset": "sample_tiff_dataset.tiff",
+        "sino_slider": 4,
+        "recon_slider": 127,
+        "processed_datasets": [
+            "sample_tiff_dataset.tiff"
+        ]
     }
 }
