@@ -5,6 +5,13 @@ def normalize_data(projections: np.ndarray,
                   flat_field: Optional[np.ndarray] = None,
                   dark_field: Optional[np.ndarray] = None) -> np.ndarray:
     """Normalize projection data using flat and dark fields."""
+    # Convert inputs to float32
+    projections = projections.astype(np.float32)
+    if flat_field is not None:
+        flat_field = flat_field.astype(np.float32)
+    if dark_field is not None:
+        dark_field = dark_field.astype(np.float32)
+    
     if flat_field is None:
         # Use simple min-max normalization if no flat/dark fields
         return (projections - projections.min()) / (projections.max() - projections.min())
@@ -16,15 +23,15 @@ def normalize_data(projections: np.ndarray,
 def remove_ring_artifacts(data: np.ndarray, level: float = 1.0) -> np.ndarray:
     """Remove ring artifacts using median filtering."""
     # Simple ring removal using median filter
-    filtered = np.copy(data)
+    filtered = np.copy(data).astype(np.float32)
     for i in range(data.shape[0]):
-        filtered[i] = np.median(data[max(0, i-int(level)):min(data.shape[0], i+int(level)+1)], axis=0)
+        filtered[i] = np.median(data[max(0, i-int(level)):min(data.shape[0], i+int(level)+1)], axis=0).astype(np.float32)
     return filtered
 
 def find_center_of_rotation(data: np.ndarray) -> float:
     """Estimate center of rotation using image symmetry."""
     # Simple center estimation using the middle of the image
-    return data.shape[2] / 2.0
+    return np.float32(data.shape[2] / 2.0)
 
 def reconstruct_slice(data: np.ndarray,
                      theta: np.ndarray,
@@ -33,15 +40,15 @@ def reconstruct_slice(data: np.ndarray,
     """Simple backprojection reconstruction."""
     num_angles = data.shape[0]
     img_size = data.shape[2]
-    reconstruction = np.zeros((img_size, img_size))
+    reconstruction = np.zeros((img_size, img_size), dtype=np.float32)
     
     # Simple backprojection
     for i, angle in enumerate(theta):
-        projection = data[i]
+        projection = data[i].astype(np.float32)
         rotated = np.rot90(np.tile(projection, (img_size, 1)), k=int(angle * 2/np.pi))
         reconstruction += rotated
     
-    return reconstruction / num_angles
+    return (reconstruction / num_angles).astype(np.float32)
 
 def process_pipeline(data: np.ndarray,
                     normalize: bool = True,
@@ -49,12 +56,12 @@ def process_pipeline(data: np.ndarray,
                     ring_level: float = 1.0) -> dict:
     """Complete processing pipeline with intermediate results."""
     results = {
-        'original': data,
+        'original': data.astype(np.float32),
         'normalized': None,
         'ring_corrected': None,
         'reconstructed': None,
         'center': None,
-        'theta': np.linspace(0, np.pi, data.shape[0])
+        'theta': np.linspace(0, np.pi, data.shape[0], dtype=np.float32)
     }
     
     # Normalization
