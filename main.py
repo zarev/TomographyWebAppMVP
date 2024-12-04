@@ -157,13 +157,13 @@ if st.session_state.datasets:
             with st.spinner(f"Processing {st.session_state.current_dataset}..."):
                 try:
                     data = st.session_state.datasets[st.session_state.current_dataset]['data']
-                    reconstructed, center = process_pipeline(
+                    results = process_pipeline(
                         data,
                         normalize=normalize,
                         remove_rings=remove_rings,
                         ring_level=ring_level
                     )
-                    st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
+                    st.session_state.reconstructed[st.session_state.current_dataset] = results
                     # Update visualization indices in current configuration if exists
                     if st.session_state.current_config:
                         config_name = st.session_state.current_config
@@ -172,7 +172,7 @@ if st.session_state.datasets:
                             'recon_idx': st.session_state.get('recon_slider', 0)
                         })
                         save_configurations(st.session_state.configurations)
-                    st.success(f"Processing complete! Center of rotation: {center:.2f}")
+                    st.success(f"Processing complete! Center of rotation: {results['center']:.2f}")
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
     
@@ -182,14 +182,14 @@ if st.session_state.datasets:
                 with st.spinner(f"Processing {dataset_name}..."):
                     try:
                         data = st.session_state.datasets[dataset_name]['data']
-                        reconstructed, center = process_pipeline(
+                        results = process_pipeline(
                             data,
                             normalize=normalize,
                             remove_rings=remove_rings,
                             ring_level=ring_level
                         )
-                        st.session_state.reconstructed[dataset_name] = reconstructed
-                        st.success(f"Processed {dataset_name}! Center of rotation: {center:.2f}")
+                        st.session_state.reconstructed[dataset_name] = results
+                        st.success(f"Processed {dataset_name}! Center of rotation: {results['center']:.2f}")
                     except Exception as e:
                         st.error(f"Processing {dataset_name} failed: {str(e)}")
 

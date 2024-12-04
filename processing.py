@@ -9,7 +9,7 @@ def normalize_data(projections: np.ndarray,
     if flat_field is None:
         # Use simple min-max normalization if no flat/dark fields
         return (projections - projections.min()) / (projections.max() -
-                                                    projections.min())
+                                                   projections.min())
 
     # Apply flat/dark field correction
     norm = (projections - dark_field) / (flat_field - dark_field)
@@ -23,7 +23,7 @@ def remove_ring_artifacts(data: np.ndarray, level: float = 1.0) -> np.ndarray:
     for i in range(data.shape[0]):
         filtered[i] = np.median(
             data[max(0, i - int(level)):min(data.shape[0], i + int(level) +
-                                            1)],
+                                           1)],
             axis=0)
     return filtered
 
@@ -53,10 +53,7 @@ def reconstruct_slice(data: np.ndarray,
     return reconstruction / num_angles
 
 
-def process_pipeline(data: np.ndarray,
-                     normalize: bool = True,
-                     remove_rings: bool = True,
-                     ring_level: float = 1.0) -> dict:
+def process_pipeline(data: np.ndarray, normalize: bool = True, remove_rings: bool = True, ring_level: float = 1.0) -> dict:
     """Complete processing pipeline with intermediate results."""
     results = {
         'original': data.copy(),
@@ -65,10 +62,9 @@ def process_pipeline(data: np.ndarray,
         'reconstructed': None,
         'center': None
     }
-
-    # Generate projection angles
+    
+    current_data = data.copy()
     theta = np.linspace(0, np.pi, data.shape[0], dtype=np.float32)
-    current_data = data
 
     # Normalization
     if normalize:
@@ -77,13 +73,17 @@ def process_pipeline(data: np.ndarray,
 
     # Ring artifact removal
     if remove_rings:
-        results['ring_removed'] = remove_ring_artifacts(current_data, ring_level).astype(np.float32)
+        results['ring_removed'] = remove_ring_artifacts(current_data, ring_level)
         current_data = results['ring_removed']
 
     # Find center of rotation
     results['center'] = find_center_of_rotation(current_data)
-
+    
     # Reconstruction
-    results['reconstructed'] = np.zeros((data.shape[1], data.shape[2], data.shape[2]), dtype=np.float32)
-
+    results['reconstructed'] = reconstruct_slice(
+        current_data, 
+        theta, 
+        results['center']
+    )
+    
     return results
