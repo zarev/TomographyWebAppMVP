@@ -46,26 +46,39 @@ def reconstruct_slice(data: np.ndarray,
 def process_pipeline(data: np.ndarray,
                     normalize: bool = True,
                     remove_rings: bool = True,
-                    ring_level: float = 1.0) -> Tuple[np.ndarray, float]:
-    """Complete processing pipeline."""
-    # Generate projection angles
-    theta = np.linspace(0, np.pi, data.shape[0])
+                    ring_level: float = 1.0) -> dict:
+    """Complete processing pipeline with intermediate results."""
+    results = {
+        'original': data,
+        'normalized': None,
+        'ring_corrected': None,
+        'reconstructed': None,
+        'center': None,
+        'theta': np.linspace(0, np.pi, data.shape[0])
+    }
     
     # Normalization
     if normalize:
-        data = normalize_data(data)
+        results['normalized'] = normalize_data(data)
+        data = results['normalized']
+    else:
+        results['normalized'] = data
     
     # Ring artifact removal
     if remove_rings:
-        data = remove_ring_artifacts(data, ring_level)
+        results['ring_corrected'] = remove_ring_artifacts(data, ring_level)
+        data = results['ring_corrected']
+    else:
+        results['ring_corrected'] = data
     
     # Find center of rotation
-    center = find_center_of_rotation(data)
+    results['center'] = find_center_of_rotation(data)
     
     # Reconstruction
     reconstructed = np.zeros((data.shape[1], data.shape[2], data.shape[2]))
     for i in range(data.shape[1]):
         slice_data = data[:, i:i+1, :]
-        reconstructed[i] = reconstruct_slice(slice_data, theta, center)
+        reconstructed[i] = reconstruct_slice(slice_data, results['theta'], results['center'])
     
-    return reconstructed, center
+    results['reconstructed'] = reconstructed
+    return results

@@ -157,13 +157,17 @@ if st.session_state.datasets:
             with st.spinner(f"Processing {st.session_state.current_dataset}..."):
                 try:
                     data = st.session_state.datasets[st.session_state.current_dataset]['data']
-                    reconstructed, center = process_pipeline(
+                    results = process_pipeline(
                         data,
                         normalize=normalize,
                         remove_rings=remove_rings,
                         ring_level=ring_level
                     )
-                    st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
+                    st.session_state.reconstructed[st.session_state.current_dataset] = {
+                        'normalized': results['normalized'],
+                        'ring_corrected': results['ring_corrected'],
+                        'reconstructed': results['reconstructed']
+                    }
                     # Update visualization indices in current configuration if exists
                     if st.session_state.current_config:
                         config_name = st.session_state.current_config
@@ -172,7 +176,7 @@ if st.session_state.datasets:
                             'recon_idx': st.session_state.get('recon_slider', 0)
                         })
                         save_configurations(st.session_state.configurations)
-                    st.success(f"Processing complete! Center of rotation: {center:.2f}")
+                    st.success(f"Processing complete! Center of rotation: {results['center']:.2f}")
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
     
@@ -197,25 +201,38 @@ if st.session_state.datasets:
 if st.session_state.current_dataset:
     st.subheader("Results")
     
-    col1, col2 = st.columns(2)
+    # Original Data
+    st.markdown("### Original Data")
+    if st.session_state.current_dataset in st.session_state.datasets:
+        data = st.session_state.datasets[st.session_state.current_dataset]['data']
+        sino_idx = create_slice_navigator(data, "original_sino")
+        display_slice(data, sino_idx, "Original Sinogram")
+    else:
+        st.warning(f"Dataset '{st.session_state.current_dataset}' is not currently loaded. Please upload the dataset.")
     
-    with col1:
-        st.markdown("### Sinogram")
-        if st.session_state.current_dataset in st.session_state.datasets:
-            data = st.session_state.datasets[st.session_state.current_dataset]['data']
-            sino_idx = create_slice_navigator(data, "sino")
-            display_slice(data, sino_idx, "")
-        else:
-            st.warning(f"Dataset '{st.session_state.current_dataset}' is not currently loaded. Please upload the dataset.")
+    # Processed Results
+    if st.session_state.current_dataset in st.session_state.reconstructed:
+        results = st.session_state.reconstructed[st.session_state.current_dataset]
         
-    with col2:
-        st.markdown("### Reconstruction")
-        if st.session_state.current_dataset in st.session_state.reconstructed:
-            reconstructed = st.session_state.reconstructed[st.session_state.current_dataset]
-            recon_idx = create_slice_navigator(reconstructed, "recon")
-            display_slice(reconstructed, recon_idx, "")
-        else:
-            st.info("Please process the dataset to view reconstruction.")
+        # Normalized Data
+        st.markdown("### After Normalization")
+        if results['normalized'] is not None:
+            norm_idx = create_slice_navigator(results['normalized'], "norm_sino")
+            display_slice(results['normalized'], norm_idx, "Normalized Sinogram")
+        
+        # Ring Corrected Data
+        st.markdown("### After Ring Removal")
+        if results['ring_corrected'] is not None:
+            ring_idx = create_slice_navigator(results['ring_corrected'], "ring_sino")
+            display_slice(results['ring_corrected'], ring_idx, "Ring Corrected Sinogram")
+        
+        # Final Reconstruction
+        st.markdown("### Final Reconstruction")
+        if results['reconstructed'] is not None:
+            recon_idx = create_slice_navigator(results['reconstructed'], "recon")
+            display_slice(results['reconstructed'], recon_idx, "Reconstructed Slice")
+    else:
+        st.info("Please process the dataset to view intermediate and final results.")
     
     # Export results
     st.subheader("Export Results")
