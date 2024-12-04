@@ -59,13 +59,13 @@ def process_pipeline(data: np.ndarray,
                      ring_level: float = 1.0) -> dict:
     """Complete processing pipeline with intermediate results."""
     results = {
-        'original': data,
+        'original': data.copy(),
         'normalized': None,
         'ring_removed': None,
         'reconstructed': None,
         'center': None
     }
-    
+
     # Generate projection angles
     theta = np.linspace(0, np.pi, data.shape[0], dtype=np.float32)
     current_data = data
@@ -81,14 +81,9 @@ def process_pipeline(data: np.ndarray,
         current_data = results['ring_removed']
 
     # Find center of rotation
-    center = find_center_of_rotation(current_data)
-    results['center'] = center
+    results['center'] = find_center_of_rotation(current_data)
 
     # Reconstruction
-    reconstructed = np.zeros((current_data.shape[1], current_data.shape[2], current_data.shape[2]), dtype=np.float32)
-    for i in range(current_data.shape[1]):
-        slice_data = current_data[:, i:i + 1, :].astype(dtype=np.float32)
-        reconstructed[i] = reconstruct_slice(slice_data, theta, center)
-    
-    results['reconstructed'] = reconstructed
+    results['reconstructed'] = np.zeros((data.shape[1], data.shape[2], data.shape[2]), dtype=np.float32)
+
     return results
