@@ -32,3 +32,33 @@ def create_slice_navigator(data: np.ndarray, key_prefix: str) -> int:
         key=f"{key_prefix}_slider"
     )
     return slice_idx
+
+
+def create_histogram(data: np.ndarray, bins: int = 100):
+    """Create a histogram of the data values."""
+    if data is None:
+        return
+    
+    # Calculate histogram
+    hist, bins = np.histogram(data.flatten(), bins=bins)
+    
+    # Create figure using streamlit
+    st.subheader("Intensity Distribution")
+    
+    # Plot histogram
+    st.bar_chart(
+        data={"intensity": hist},
+        width=0,
+        height=200
+    )
+    
+    # Display statistics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Min", f"{data.min():.2f}")
+    with col2:
+        st.metric("Max", f"{data.max():.2f}")
+    with col3:
+        st.metric("Mean", f"{data.mean():.2f}")
+    with col4:
+        st.metric("Std", f"{data.std():.2f}")

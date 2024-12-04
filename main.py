@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 from utils import read_hdf5, read_tiff_stack, save_tiff, validate_file
 from processing import process_pipeline
-from visualization import display_slice, create_slice_navigator
+from visualization import display_slice, create_slice_navigator, create_histogram
 
 # Page config
 st.set_page_config(
@@ -72,6 +72,19 @@ if st.session_state.datasets:
             st.metric("Height", dataset['metadata']['shape'][1])
         with col3:
             st.metric("Width", dataset['metadata']['shape'][2])
+        
+        # Add slice visualization and histogram
+        st.markdown("### Data Preview")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("#### Sample Slice")
+            data = dataset['data']
+            slice_idx = create_slice_navigator(data, "preview")
+            display_slice(data, slice_idx, "")
+        
+        with col2:
+            st.markdown("#### Intensity Distribution")
+            create_histogram(data[slice_idx])
 
 # Processing parameters
 if st.session_state.datasets:
