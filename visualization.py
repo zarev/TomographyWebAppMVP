@@ -22,16 +22,13 @@ def display_slice(data: np.ndarray, slice_idx: int, title: str):
 
 def create_slice_navigator(data: np.ndarray, key_prefix: str) -> int:
     """Create a slider for navigating through slices."""
-    if data is None or len(data.shape) < 2 or data.shape[0] <= 1:
+    if data is None or len(data.shape) < 2:
         return 0
     
     max_slice = data.shape[0] - 1
-    # Only create slider if we have more than one slice
-    if max_slice > 0:
-        slice_idx = st.slider(
-            "Select slice",
-            0, max_slice, max_slice // 2,
-            key=f"{key_prefix}_slider"
-        )
-        return slice_idx
-    return 0
+    slice_idx = st.slider(
+        "Select slice",
+        0, max_slice, max_slice // 2,
+        key=f"{key_prefix}_slider"
+    )
+    return slice_idx

@@ -1,9 +1,6 @@
 import streamlit as st
 import numpy as np
-from utils import (
-    read_hdf5, read_tiff_stack, save_tiff, validate_file,
-    load_configurations, save_configurations
-)
+from utils import read_hdf5, read_tiff_stack, save_tiff, validate_file
 from processing import process_pipeline
 from visualization import display_slice, create_slice_navigator
 
@@ -21,12 +18,6 @@ if 'reconstructed' not in st.session_state:
     st.session_state.reconstructed = {}
 if 'current_dataset' not in st.session_state:
     st.session_state.current_dataset = None
-if 'configurations' not in st.session_state:
-    st.session_state.configurations = load_configurations()
-if 'current_config' not in st.session_state:
-    st.session_state.current_config = None
-if 'config_changed' not in st.session_state:
-    st.session_state.config_changed = False
 
 # Title and description
 st.title("Tomographic Reconstruction")
@@ -82,72 +73,20 @@ if st.session_state.datasets:
         with col3:
             st.metric("Width", dataset['metadata']['shape'][2])
 
-# Configuration Management
-st.subheader("Configuration Management")
-col1, col2 = st.columns(2)
-with col1:
-    # Save current configuration
-    config_name = st.text_input("Configuration Name", key="config_name")
-    if st.button("Save Configuration"):
-        if config_name:
-            st.session_state.configurations[config_name] = {
-                # Processing parameters
-                'normalize': st.session_state.get('normalize', True),
-                'remove_rings': st.session_state.get('remove_rings', True),
-                'ring_level': st.session_state.get('ring_level', 1.0),
-                
-                # Workflow state
-                'current_dataset': st.session_state.current_dataset,
-                'sino_slider': st.session_state.get('sino_slider', 0),
-                'recon_slider': st.session_state.get('recon_slider', 0),
-                
-                # Add any other relevant state variables
-                'processed_datasets': list(st.session_state.reconstructed.keys())
-            }
-            save_configurations(st.session_state.configurations)
-            st.success(f"Configuration '{config_name}' saved!")
-
-with col2:
-    # Load configuration
-    if st.session_state.configurations:
-        selected_config = st.selectbox(
-            "Select Configuration",
-            ['Default'] + list(st.session_state.configurations.keys()),
-            key="selected_config"
-        )
-        
-        if st.button("Load Configuration"):
-            if selected_config != 'Default':
-                config = st.session_state.configurations[selected_config]
-                # Update all session state variables
-                for key, value in config.items():
-                    st.session_state[key] = value
-                st.session_state.current_config = selected_config
-                st.rerun()  # Force refresh
-
-st.markdown("---")
-
-# Processing parameters (only shown when datasets are available)
+# Processing parameters
 if st.session_state.datasets:
     st.subheader("Processing Parameters")
     
-    # Processing parameters
     col1, col2 = st.columns(2)
     with col1:
-        normalize = st.checkbox("Apply Normalization", 
-                              value=st.session_state.get('normalize', True),
-                              key='normalize')
-        remove_rings = st.checkbox("Remove Ring Artifacts", 
-                                 value=st.session_state.get('remove_rings', True),
-                                 key='remove_rings')
+        normalize = st.checkbox("Apply Normalization", value=True)
+        remove_rings = st.checkbox("Remove Ring Artifacts", value=True)
     
     with col2:
         ring_level = st.slider(
             "Ring Removal Strength",
-            0.1, 5.0, 
-            value=st.session_state.get('ring_level', 1.0),
-            disabled=not remove_rings,
-            key='ring_level'
+            0.1, 5.0, 1.0,
+            disabled=not remove_rings
         )
     
     # Process buttons
@@ -157,26 +96,14 @@ if st.session_state.datasets:
             with st.spinner(f"Processing {st.session_state.current_dataset}..."):
                 try:
                     data = st.session_state.datasets[st.session_state.current_dataset]['data']
-                    results = process_pipeline(
+                    reconstructed, center = process_pipeline(
                         data,
                         normalize=normalize,
                         remove_rings=remove_rings,
                         ring_level=ring_level
                     )
-                    st.session_state.reconstructed[st.session_state.current_dataset] = {
-                        'normalized': results['normalized'],
-                        'ring_corrected': results['ring_corrected'],
-                        'reconstructed': results['reconstructed']
-                    }
-                    # Update visualization indices in current configuration if exists
-                    if st.session_state.current_config:
-                        config_name = st.session_state.current_config
-                        st.session_state.configurations[config_name].update({
-                            'sino_idx': st.session_state.get('sino_slider', 0),
-                            'recon_idx': st.session_state.get('recon_slider', 0)
-                        })
-                        save_configurations(st.session_state.configurations)
-                    st.success(f"Processing complete! Center of rotation: {results['center']:.2f}")
+                    st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
+                    st.success(f"Processing complete! Center of rotation: {center:.2f}")
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
     
@@ -198,41 +125,22 @@ if st.session_state.datasets:
                         st.error(f"Processing {dataset_name} failed: {str(e)}")
 
 # Visualization
-if st.session_state.current_dataset:
+if st.session_state.current_dataset and st.session_state.current_dataset in st.session_state.reconstructed:
     st.subheader("Results")
     
-    # Original Data
-    st.markdown("### Original Data")
-    if st.session_state.current_dataset in st.session_state.datasets:
-        data = st.session_state.datasets[st.session_state.current_dataset]['data']
-        sino_idx = create_slice_navigator(data, "original_sino")
-        display_slice(data, sino_idx, "Original Sinogram")
-    else:
-        st.warning(f"Dataset '{st.session_state.current_dataset}' is not currently loaded. Please upload the dataset.")
+    col1, col2 = st.columns(2)
     
-    # Processed Results
-    if st.session_state.current_dataset in st.session_state.reconstructed:
-        results = st.session_state.reconstructed[st.session_state.current_dataset]
+    with col1:
+        st.markdown("### Sinogram")
+        data = st.session_state.datasets[st.session_state.current_dataset]['data']
+        sino_idx = create_slice_navigator(data, "sino")
+        display_slice(data, sino_idx, "")
         
-        # Normalized Data
-        st.markdown("### After Normalization")
-        if results['normalized'] is not None:
-            norm_idx = create_slice_navigator(results['normalized'], "norm_sino")
-            display_slice(results['normalized'], norm_idx, "Normalized Sinogram")
-        
-        # Ring Corrected Data
-        st.markdown("### After Ring Removal")
-        if results['ring_corrected'] is not None:
-            ring_idx = create_slice_navigator(results['ring_corrected'], "ring_sino")
-            display_slice(results['ring_corrected'], ring_idx, "Ring Corrected Sinogram")
-        
-        # Final Reconstruction
-        st.markdown("### Final Reconstruction")
-        if results['reconstructed'] is not None:
-            recon_idx = create_slice_navigator(results['reconstructed'], "recon")
-            display_slice(results['reconstructed'], recon_idx, "Reconstructed Slice")
-    else:
-        st.info("Please process the dataset to view intermediate and final results.")
+    with col2:
+        st.markdown("### Reconstruction")
+        reconstructed = st.session_state.reconstructed[st.session_state.current_dataset]
+        recon_idx = create_slice_navigator(reconstructed, "recon")
+        display_slice(reconstructed, recon_idx, "")
     
     # Export results
     st.subheader("Export Results")

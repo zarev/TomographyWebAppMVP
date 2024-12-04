@@ -44,18 +44,3 @@ def validate_file(file) -> bool:
     
     filename = file.name.lower()
     return filename.endswith(('.h5', '.hdf5', '.tif', '.tiff'))
-
-def load_configurations() -> dict:
-    """Load configurations from JSON file."""
-    import json
-    try:
-        with open('configs.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_configurations(configs: dict) -> None:
-    """Save configurations to JSON file."""
-    import json
-    with open('configs.json', 'w') as f:
-        json.dump(configs, f, indent=4)
