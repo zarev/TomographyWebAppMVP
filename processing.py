@@ -35,29 +35,29 @@ def reconstruct_slice(data: np.ndarray,
         import astra
         vol_geom = astra.create_vol_geom(data.shape[2], data.shape[2])
         proj_geom = astra.create_proj_geom('parallel', 1.0, data.shape[2], theta)
-        
+
         # Create sinogram and volume
         sino_id = astra.data2d.create('-sino', proj_geom, data[0])
         rec_id = astra.data2d.create('-vol', vol_geom)
-        
+
         # Create configuration and algorithm
         cfg = astra.astra_dict('FBP')
         cfg['ProjectorId'] = astra.create_projector('line', proj_geom, vol_geom)
         cfg['ProjectionDataId'] = sino_id
         cfg['ReconstructionDataId'] = rec_id
-        
+
         # Run reconstruction
         alg_id = astra.algorithm.create(cfg)
         astra.algorithm.run(alg_id)
         reconstruction = astra.data2d.get(rec_id)
-        
+
         # Cleanup
         astra.algorithm.delete(alg_id)
         astra.data2d.delete(rec_id)
         astra.data2d.delete(sino_id)
-        
+
         return reconstruction
-    
+
     # Simple backprojection
     num_angles = data.shape[0]
     img_size = data.shape[2]
@@ -66,7 +66,7 @@ def reconstruct_slice(data: np.ndarray,
         projection = data[i]
         rotated = np.rot90(np.tile(projection, (img_size, 1)), k=int(angle * 2/np.pi))
         reconstruction += rotated
-    
+
     return reconstruction / num_angles
 
 def process_pipeline(data: np.ndarray,
@@ -77,22 +77,22 @@ def process_pipeline(data: np.ndarray,
     """Complete processing pipeline."""
     # Generate projection angles
     theta = np.linspace(0, np.pi, data.shape[0])
-    
+
     # Normalization
     if normalize:
         data = normalize_data(data)
-    
+
     # Ring artifact removal
     if remove_rings:
         data = remove_ring_artifacts(data, ring_level)
-    
+
     # Find center of rotation
     center = find_center_of_rotation(data)
-    
+
     # Reconstruction
     reconstructed = np.zeros((data.shape[1], data.shape[2], data.shape[2]))
     for i in range(data.shape[1]):
         slice_data = data[:, i:i+1, :]
         reconstructed[i] = reconstruct_slice(slice_data, theta, center, algorithm=algorithm)
-    
+
     return reconstructed, center
