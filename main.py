@@ -131,6 +131,11 @@ if st.session_state.datasets:
     with col1:
         normalize = st.checkbox("Apply Normalization", value=True)
         remove_rings = st.checkbox("Remove Ring Artifacts", value=True)
+        algorithm = st.selectbox(
+            "Reconstruction Algorithm",
+            ["simple", "tomopy"],
+            help="Choose between simple backprojection or TomoPy's Gridrec algorithm"
+        )
     
     with col2:
         ring_level = st.slider(
@@ -150,7 +155,8 @@ if st.session_state.datasets:
                         data,
                         normalize=normalize,
                         remove_rings=remove_rings,
-                        ring_level=ring_level
+                        ring_level=ring_level,
+                        algorithm=algorithm
                     )
                     st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
                     st.success(f"Processing complete! Center of rotation: {center:.2f}")
