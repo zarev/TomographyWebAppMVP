@@ -30,19 +30,12 @@ def reconstruct_slice(data: np.ndarray,
                      theta: np.ndarray,
                      center: float,
                      algorithm: str = 'simple') -> np.ndarray:
-    """Reconstruction using either simple backprojection or TomoPy."""
-    if algorithm == 'tomopy':
-        import tomopy
-        # Prepare data for TomoPy (expand dims if needed)
-        tomo_data = data if len(data.shape) == 3 else np.expand_dims(data, 0)
-        # Use Gridrec algorithm
-        recon = tomopy.recon(tomo_data, theta, center=center, algorithm='gridrec')
-        return recon[0] if len(recon.shape) == 3 else recon
-    
-    # Simple backprojection
+    """Simple backprojection reconstruction."""
     num_angles = data.shape[0]
     img_size = data.shape[2]
     reconstruction = np.zeros((img_size, img_size))
+    
+    # Simple backprojection
     for i, angle in enumerate(theta):
         projection = data[i]
         rotated = np.rot90(np.tile(projection, (img_size, 1)), k=int(angle * 2/np.pi))
@@ -53,8 +46,7 @@ def reconstruct_slice(data: np.ndarray,
 def process_pipeline(data: np.ndarray,
                     normalize: bool = True,
                     remove_rings: bool = True,
-                    ring_level: float = 1.0,
-                    algorithm: str = 'simple') -> Tuple[np.ndarray, float]:
+                    ring_level: float = 1.0) -> Tuple[np.ndarray, float]:
     """Complete processing pipeline."""
     # Generate projection angles
     theta = np.linspace(0, np.pi, data.shape[0])
@@ -74,6 +66,6 @@ def process_pipeline(data: np.ndarray,
     reconstructed = np.zeros((data.shape[1], data.shape[2], data.shape[2]))
     for i in range(data.shape[1]):
         slice_data = data[:, i:i+1, :]
-        reconstructed[i] = reconstruct_slice(slice_data, theta, center, algorithm=algorithm)
+        reconstructed[i] = reconstruct_slice(slice_data, theta, center)
     
     return reconstructed, center

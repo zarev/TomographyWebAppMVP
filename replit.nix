@@ -1,6 +1,5 @@
 {pkgs}: {
   deps = [
-    pkgs.conda
     pkgs.fftw
     pkgs.zlib
     pkgs.tk

@@ -9,5 +9,4 @@ dependencies = [
     "pillow>=11.0.0",
     "streamlit>=1.40.2",
     "tifffile>=2024.9.20",
-    "tomopy>=1.10.3",
 ]
