@@ -1,8 +1,13 @@
 import streamlit as st
 import numpy as np
+import logging
 from utils import read_hdf5, read_tiff_stack, save_tiff, validate_file
 from processing import process_pipeline
 from visualization import display_slice, create_slice_navigator, create_histogram
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Page config
 st.set_page_config(
@@ -49,7 +54,7 @@ if uploaded_files:
                     tiff_files.append(uploaded_file)
             except Exception as e:
                 st.error(f"Error reading file {uploaded_file.name}: {str(e)}")
-    
+
     # Process grouped TIFF files
     if tiff_files:
         try:
@@ -58,10 +63,10 @@ if uploaded_files:
             for tiff_file in tiff_files:
                 data, _ = read_tiff_stack(tiff_file)
                 combined_data.append(data)
-            
+
             # Concatenate along the first axis (projection axis)
             concatenated_data = np.concatenate(combined_data, axis=0)
-            
+
             # Create combined metadata
             combined_metadata = {
                 'shape': concatenated_data.shape,
@@ -69,16 +74,16 @@ if uploaded_files:
                 'n_projections': concatenated_data.shape[0],
                 'source_files': [f.name for f in tiff_files]
             }
-            
+
             # Store concatenated dataset
             dataset_name = "combined_tiff_dataset.tiff"
             st.session_state.datasets[dataset_name] = {
                 'data': concatenated_data,
                 'metadata': combined_metadata
             }
-            
+
             st.success(f"Successfully combined {len(tiff_files)} TIFF files into a single dataset")
-            
+
         except Exception as e:
             st.error(f"Error combining TIFF files: {str(e)}")
 
@@ -92,7 +97,7 @@ if st.session_state.datasets:
         index=0 if st.session_state.current_dataset is None else dataset_names.index(st.session_state.current_dataset)
     )
     st.session_state.current_dataset = selected_dataset
-    
+
     # Display metadata for selected dataset
     if selected_dataset:
         dataset = st.session_state.datasets[selected_dataset]
@@ -104,19 +109,19 @@ if st.session_state.datasets:
             st.metric("Height", dataset['metadata']['shape'][1])
         with col3:
             st.metric("Width", dataset['metadata']['shape'][2])
-        
+
         # Add slice visualization and histogram
         st.markdown("### Data Preview")
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("#### Sample Slice")
             data = dataset['data']
-            
+
             # Validate data before visualization
             if data is not None and len(data.shape) >= 2:
                 slice_idx = create_slice_navigator(data, "preview")
                 display_slice(data, slice_idx, "")
-                
+
                 with col2:
                     st.markdown("#### Intensity Distribution")
                     create_histogram(data[slice_idx])
@@ -126,7 +131,7 @@ if st.session_state.datasets:
 # Processing parameters
 if st.session_state.datasets:
     st.subheader("Processing Parameters")
-    
+
     col1, col2 = st.columns(2)
     with col1:
         normalize = st.checkbox("Apply Normalization", value=True)
@@ -136,21 +141,24 @@ if st.session_state.datasets:
             ["simple", "astra"],
             help="Choose between simple backprojection or ASTRA Toolbox"
         )
-    
+
     with col2:
         ring_level = st.slider(
             "Ring Removal Strength",
             0.1, 5.0, 1.0,
             disabled=not remove_rings
         )
-    
+
     # Process buttons
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Process Selected Dataset"):
             with st.spinner(f"Processing {st.session_state.current_dataset}..."):
                 try:
+                    logger.info(f"Starting processing for dataset: {st.session_state.current_dataset}")
                     data = st.session_state.datasets[st.session_state.current_dataset]['data']
+
+                    logger.info(f"Processing with parameters: normalize={normalize}, remove_rings={remove_rings}, algorithm={algorithm}")
                     reconstructed, center = process_pipeline(
                         data,
                         normalize=normalize,
@@ -158,51 +166,62 @@ if st.session_state.datasets:
                         ring_level=ring_level,
                         algorithm=algorithm
                     )
+
                     st.session_state.reconstructed[st.session_state.current_dataset] = reconstructed
+                    logger.info("Processing completed successfully")
                     st.success(f"Processing complete! Center of rotation: {center:.2f}")
+
                 except Exception as e:
-                    st.error(f"Processing failed: {str(e)}")
-    
+                    logger.error(f"Processing failed: {str(e)}")
+                    st.error(f"Processing failed: {str(e)}\nPlease check the logs for details.")
+
     with col2:
         if st.button("Process All Datasets"):
             for dataset_name in st.session_state.datasets:
                 with st.spinner(f"Processing {dataset_name}..."):
                     try:
+                        logger.info(f"Starting processing for dataset: {dataset_name}")
                         data = st.session_state.datasets[dataset_name]['data']
+
+                        logger.info(f"Processing with parameters: normalize={normalize}, remove_rings={remove_rings}, algorithm={algorithm}")
                         reconstructed, center = process_pipeline(
                             data,
                             normalize=normalize,
                             remove_rings=remove_rings,
                             ring_level=ring_level,
-                        algorithm=algorithm
+                            algorithm=algorithm
                         )
+
                         st.session_state.reconstructed[dataset_name] = reconstructed
+                        logger.info(f"Successfully processed dataset: {dataset_name}")
                         st.success(f"Processed {dataset_name}! Center of rotation: {center:.2f}")
+
                     except Exception as e:
-                        st.error(f"Processing {dataset_name} failed: {str(e)}")
+                        logger.error(f"Processing {dataset_name} failed: {str(e)}")
+                        st.error(f"Processing {dataset_name} failed: {str(e)}\nPlease check the logs for details.")
 
 # Visualization
 if st.session_state.current_dataset and st.session_state.current_dataset in st.session_state.reconstructed:
     st.subheader("Results")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("### Sinogram")
         data = st.session_state.datasets[st.session_state.current_dataset]['data']
         sino_idx = create_slice_navigator(data, "sino")
         display_slice(data, sino_idx, "")
-        
+
     with col2:
         st.markdown("### Reconstruction")
         reconstructed = st.session_state.reconstructed[st.session_state.current_dataset]
         recon_idx = create_slice_navigator(reconstructed, "recon")
         display_slice(reconstructed, recon_idx, "")
-    
+
     # Export results
     st.subheader("Export Results")
     col1, col2 = st.columns(2)
-    
+
     with col1:
         if st.button("Download Current Reconstruction"):
             try:
@@ -216,7 +235,7 @@ if st.session_state.current_dataset and st.session_state.current_dataset in st.s
                 )
             except Exception as e:
                 st.error(f"Export failed: {str(e)}")
-    
+
     with col2:
         if st.button("Download All Reconstructions"):
             try:
