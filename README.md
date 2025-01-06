@@ -29,18 +29,11 @@ A Streamlit-based web application for processing and reconstructing tomographic 
     poetry install
     ```
 
-3. Activate the virtual environment:
-
-    ```bash
-    poetry shell
-    ```
-
-
 ## Usage
 
 1. Run the application:
    ```
-   streamlit run main.py --server.port 5000
+   poetry run streamlit run main.py --server.port 5000
    ```
    - The app will start on port 5000
 
