@@ -64,13 +64,9 @@ def reconstruct_slice(data: np.ndarray,
             rec_id = astra.data2d.create('-vol', vol_geom)
 
             # Create configuration and algorithm
-            # Try CUDA first, fall back to CPU if not available
-            try:
-                cfg = astra.astra_dict('FBP_CUDA')
-                logger.info("Using CUDA-accelerated reconstruction")
-            except Exception:
-                cfg = astra.astra_dict('FBP')
-                logger.info("Using CPU-based reconstruction")
+            # Use CPU-only mode
+            cfg = astra.astra_dict('FBP')
+            logger.info("Using CPU-based reconstruction")
 
             # Create CPU-compatible projector
             cfg['ProjectorId'] = astra.create_projector('linear', proj_geom, vol_geom)
