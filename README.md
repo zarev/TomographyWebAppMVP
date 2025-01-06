@@ -15,21 +15,33 @@ A Streamlit-based web application for processing and reconstructing tomographic 
 
 ## Installation
 
-1. Fork this Repl from the Replit interface
-2. The dependencies will be automatically installed based on the pyproject.toml file
+### Using Poetry
 
-Required packages:
-- numpy
-- streamlit 
-- h5py
-- pillow
-- tifffile
-- astra-toolbox
+1. Install Poetry:
+
+    ```bash
+    curl -sSL https://install.python-poetry.org | python3 -
+    ```
+
+2. Install dependencies:
+
+    ```bash
+    poetry install
+    ```
+
+3. Activate the virtual environment:
+
+    ```bash
+    poetry shell
+    ```
+
 
 ## Usage
 
 1. Run the application:
-   - Click the "Run" button in Replit
+   ```
+   streamlit run main.py --server.port 5000
+   ```
    - The app will start on port 5000
 
 2. Upload Data:
