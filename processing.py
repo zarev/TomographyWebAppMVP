@@ -2,6 +2,16 @@ import numpy as np
 from typing import Optional, Tuple
 import logging
 
+import sys
+
+print("Python executable:", sys.executable)
+print("Python path:", sys.path)
+try:
+    import tomopy
+    print(f"TomoPy version: {tomopy.__version__}")
+except ImportError as e:
+    print(f"ImportError: {e}")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,83 +47,79 @@ def find_center_of_rotation(data: np.ndarray) -> float:
 def reconstruct_slice(data: np.ndarray,
                      theta: np.ndarray,
                      center: float,
-                     algorithm: str = 'simple') -> np.ndarray:
-    """Reconstruction using simple backprojection or ASTRA."""
+                     algorithm: str = 'gridrec') -> np.ndarray:
+    """
+    Reconstruction using TomoPy or simple backprojection.
+
+    Parameters:
+    - data (np.ndarray): The projection data.
+    - theta (np.ndarray): The projection angles.
+    - center (float): The center of rotation.
+    - algorithm (str): Reconstruction algorithm ('gridrec', 'art', etc., or 'simple').
+
+    Returns:
+    - np.ndarray: The reconstructed slice.
+    """
     logger.info(f"Starting reconstruction with algorithm: {algorithm}")
 
-    # Validate input data
-    if data is None or len(data.shape) < 2:
-        raise ValueError("Invalid input data dimensions")
+    
+    # Ensure input data has the correct shape: (projections, slices, pixels)
+    if data.ndim != 3 or data.shape[0] != len(theta):
+        raise ValueError(f"Invalid data shape: {data.shape}. "
+                            f"Expected shape (projections, slices, pixels).")
 
-    if algorithm == 'astra':
+    # Validate TomoPy algorithm
+    supported_tomopy_algorithms = ['gridrec', 'art', 'mlem', 'osem', 'sirt', 'pml_hybrid']
+    
+    if algorithm.lower() != 'simple':
         try:
-            import astra
-            logger.info("Successfully imported ASTRA")
+            import tomopy
+            logger.info("Successfully imported TomoPy")
 
-            # Validate data dimensions
-            if len(data.shape) != 3 or data.shape[0] != len(theta):
-                raise ValueError(f"Invalid data shape for ASTRA: {data.shape}")
+            if algorithm not in supported_tomopy_algorithms:
+                raise ValueError(f"Unsupported TomoPy algorithm: '{algorithm}'. "
+                                 f"Supported algorithms are: {supported_tomopy_algorithms}")
 
-            vol_geom = astra.create_vol_geom(data.shape[2], data.shape[2])
-            proj_geom = astra.create_proj_geom('parallel', 1.0, data.shape[2], theta)
+            # If 'center' is not provided accurately, TomoPy can estimate it
+            logger.info(f"Reconstructing with center: {center}")
 
-            logger.info("Created ASTRA geometries")
+            # Perform TomoPy reconstruction
+            reconstruction = tomopy.recon(data, theta, center=center, algorithm=algorithm)
+            logger.info("Reconstruction completed using TomoPy")
 
-            # Create sinogram and volume
-            sino_id = astra.data2d.create('-sino', proj_geom, data[0])
-            rec_id = astra.data2d.create('-vol', vol_geom)
-
-            # Create configuration and algorithm
-            # Use CPU-only mode
-            cfg = astra.astra_dict('FBP')
-            logger.info("Using CPU-based reconstruction")
-
-            # Create CPU-compatible projector
-            cfg['ProjectorId'] = astra.create_projector('linear', proj_geom, vol_geom)
-            cfg['ProjectionDataId'] = sino_id
-            cfg['ReconstructionDataId'] = rec_id
-
-            logger.info("Starting ASTRA reconstruction")
-
-            # Run reconstruction
-            alg_id = astra.algorithm.create(cfg)
-            astra.algorithm.run(alg_id)
-            reconstruction = astra.data2d.get(rec_id)
-
-            logger.info("ASTRA reconstruction completed")
-
-            # Cleanup
-            astra.algorithm.delete(alg_id)
-            astra.data2d.delete(rec_id)
-            astra.data2d.delete(sino_id)
-
-            return reconstruction
+            # TomoPy returns an array with shape (slices, pixels, pixels)
+            # Since we're reconstructing a single slice, return the first (and only) slice
+            return reconstruction[0]
 
         except ImportError:
-            logger.error("Failed to import ASTRA, falling back to simple reconstruction")
-            algorithm = 'simple'
+            logger.error("Failed to import TomoPy")
         except Exception as e:
-            logger.error(f"ASTRA reconstruction failed: {str(e)}")
-            logger.info("Falling back to simple reconstruction")
-            algorithm = 'simple'
+            logger.error(f"TomoPy reconstruction failed: {str(e)}")
 
-    if algorithm == 'simple':
+    if algorithm.lower() == 'simple':
         logger.info("Using simple backprojection")
-        # Simple backprojection
-        num_angles = data.shape[0]
-        img_size = data.shape[2]
-        reconstruction = np.zeros((img_size, img_size))
 
         try:
+            num_angles = data.shape[0]
+            img_size = data.shape[2]
+            reconstruction = np.zeros((img_size, img_size))
+
             for i, angle in enumerate(theta):
-                projection = data[i]
-                rotated = np.rot90(np.tile(projection, (img_size, 1)), k=int(angle * 2/np.pi))
+                projection = data[i, 0, :]  # Assuming single slice
+                rotated = np.rot90(np.tile(projection, (img_size, 1)), k=int(np.round(angle * 2 / np.pi)))
                 reconstruction += rotated
 
-            return reconstruction / num_angles
+                if (i + 1) % 10 == 0 or (i + 1) == num_angles:
+                    logger.info(f"Reconstructed slice {i+1}/{num_angles}")
+
+            reconstruction /= num_angles
+            logger.info("Simple backprojection reconstruction completed successfully")
+            return reconstruction
+
         except Exception as e:
             logger.error(f"Simple reconstruction failed: {str(e)}")
             raise
+
 
 def process_pipeline(data: np.ndarray,
                     normalize: bool = True,

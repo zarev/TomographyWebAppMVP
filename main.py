@@ -138,8 +138,8 @@ if st.session_state.datasets:
         remove_rings = st.checkbox("Remove Ring Artifacts", value=True)
         algorithm = st.selectbox(
             "Reconstruction Algorithm",
-            ["simple", "astra"],
-            help="Choose between simple backprojection or ASTRA Toolbox"
+            ["gridrec", "art", "mlem", "osem", "sirt", "pml_hybrid", "simple"],
+            help="Choose between simple backprojection or Tomopy algorithms"
         )
 
     with col2:
