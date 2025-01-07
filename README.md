@@ -15,25 +15,25 @@ A Streamlit-based web application for processing and reconstructing tomographic 
 
 ## Installation
 
-### Using Poetry
+### Using Miniconda
 
-1. Install Poetry:
+1. Install Miniconda:
+
+    
+   [Miniconda Download Page](https://docs.conda.io/en/latest/miniconda.html)
+    
+
+2. Install dependencies (optionally activate your conda environment first):
 
     ```bash
-    curl -sSL https://install.python-poetry.org | python3 -
-    ```
-
-2. Install dependencies:
-
-    ```bash
-    poetry install
+    conda install -c conda-forge tomopy numpy pillow streamlit h5py
     ```
 
 ## Usage
 
 1. Run the application:
    ```
-   poetry run streamlit run main.py --server.port 5000
+   streamlit run main.py --server.port 5000
    ```
    - The app will start on port 5000
 
@@ -60,5 +60,4 @@ A Streamlit-based web application for processing and reconstructing tomographic 
 ## Notes
 
 - For large datasets, processing may take several minutes
-- The ASTRA reconstruction algorithm runs in CPU-only mode
 - Data is processed in float32 format to optimize memory usage
